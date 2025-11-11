@@ -18,8 +18,15 @@ npm install
 2. Cấu hình environment variables:
    - Copy file `.env.example` thành `.env`
    - Cập nhật các giá trị trong `.env`:
-     - `FIREBASE_SERVICE_ACCOUNT_KEY`: JSON string của service account key từ Firebase
-     - Hoặc `FIREBASE_PROJECT_ID`: Project ID cho local development
+     - **Firebase (chọn một trong hai):**
+       - `FIREBASE_SERVICE_ACCOUNT_KEY`: JSON string của service account key từ Firebase (khuyến nghị cho production)
+       - Hoặc `FIREBASE_PROJECT_ID`: Project ID cho local development với emulator
+     - **Google Drive (tùy chọn - cho upload ảnh):**
+       - `GOOGLE_CLIENT_ID`: OAuth2 Client ID từ Google Cloud Console
+       - `GOOGLE_CLIENT_SECRET`: OAuth2 Client Secret
+       - `GOOGLE_REFRESH_TOKEN`: OAuth2 Refresh Token
+     - **Server:**
+       - `PORT`: Port để chạy server (mặc định: 3000)
 
 3. Lấy Firebase Service Account Key:
    - Vào Firebase Console > Project Settings > Service Accounts
@@ -57,9 +64,14 @@ npm start
 3. Cấu hình:
    - **Build Command**: `npm install`
    - **Start Command**: `npm start`
-   - **Environment Variables**:
-     - `PORT`: Render tự động set
-     - `FIREBASE_SERVICE_ACCOUNT_KEY`: JSON string của service account key
+   - **Environment Variables** (trong Render Dashboard > Environment):
+     - `PORT`: Render tự động set (không cần set thủ công)
+     - `FIREBASE_SERVICE_ACCOUNT_KEY`: JSON string của service account key (bắt buộc nếu dùng Firebase)
+     - `GOOGLE_CLIENT_ID`: OAuth2 Client ID (bắt buộc nếu dùng upload ảnh)
+     - `GOOGLE_CLIENT_SECRET`: OAuth2 Client Secret (bắt buộc nếu dùng upload ảnh)
+     - `GOOGLE_REFRESH_TOKEN`: OAuth2 Refresh Token (bắt buộc nếu dùng upload ảnh)
+     
+   **Lưu ý:** Server sẽ vẫn chạy được nếu thiếu Firebase hoặc Google Drive credentials, nhưng các tính năng tương ứng sẽ không hoạt động.
 4. Deploy
 
 ## Cấu trúc thư mục
