@@ -22,38 +22,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDsNqDfPJjvpWpsNeYFfhJ7RS_D8qDtJxg',
-    appId: '1:892549514296:web:0bd734482fec5f3f6092cd',
-    messagingSenderId: '892549514296',
-    projectId: 'nut-ecom-app',
-    authDomain: 'nut-ecom-app.firebaseapp.com',
-    storageBucket: 'nut-ecom-app.firebasestorage.app',
-    measurementId: 'G-C6TS4K9J2V',
+    apiKey: "AIzaSyDn_sTYrWNq9oAtxi2-jUMow3hrVxTRiow",
+  authDomain: "nut-ecom-app-d4de6.firebaseapp.com",
+  projectId: "nut-ecom-app-d4de6",
+  storageBucket: "nut-ecom-app-d4de6.firebasestorage.app",
+  messagingSenderId: "360061350144",
+  appId: "1:360061350144:web:ce6e00bac092a77a7b83e5",
+  measurementId: "G-7CP7LD1W51",
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCY8HFjpMvZbP1RaYS0x8pIthnsjXa_K7Q',
-    appId: '1:892549514296:android:0beab90b484261ff6092cd',
-    messagingSenderId: '892549514296',
-    projectId: 'nut-ecom-app',
-    storageBucket: 'nut-ecom-app.firebasestorage.app',
+    apiKey: 'AIzaSyBzXBGrXtFWef2MsawW-wk80iZRdqRKbcM',
+    appId: '1:360061350144:android:3d32cb00003ef1b47b83e5',
+    messagingSenderId: '360061350144',
+    projectId: 'nut-ecom-app-d4de6',
+    storageBucket: 'nut-ecom-app-d4de6.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyA3APqCAJ0bdhgvcGuoKwmWK8GHyjZ3nrw',
-    appId: '1:892549514296:ios:b322c055add4cbbc6092cd',
-    messagingSenderId: '892549514296',
-    projectId: 'nut-ecom-app',
-    storageBucket: 'nut-ecom-app.firebasestorage.app',
-    iosBundleId: 'nut-ecom-app',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'YOUR_MACOS_API_KEY',
-    appId: 'YOUR_MACOS_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-    iosBundleId: 'com.example.nutEcomApp',
+    apiKey: 'AIzaSyDn1L5pRwvPwpcrOdMyAhbuf_iDg1sdA8s',
+    appId: '1:360061350144:ios:47fa1b4e93bc5c227b83e5',
+    messagingSenderId: '360061350144',
+    projectId: 'com.nut.ecom-app-d4de6',
+    storageBucket: 'com.nut.ecom-app-d4de6.firebasestorage.app',
+    iosBundleId: 'com.nut.ecom-app',
   );
 }
