@@ -47,4 +47,13 @@ class DefaultFirebaseOptions {
     storageBucket: 'com.nut.ecom-app-d4de6.firebasestorage.app',
     iosBundleId: 'com.nut.ecom-app',
   );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'YOUR_MACOS_API_KEY',
+    appId: 'YOUR_MACOS_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    iosBundleId: 'YOUR_MACOS_BUNDLE_ID',
+  );
 }

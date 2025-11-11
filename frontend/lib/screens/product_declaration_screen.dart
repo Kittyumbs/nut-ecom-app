@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:nut_ecom_app/services/upload_service.dart';
 
@@ -25,7 +27,8 @@ class _ProductDeclarationScreenState extends State<ProductDeclarationScreen> {
   static const double _titleFontSize = 16.0;
 
   // Single image
-  File? _selectedImage; // null = no image
+  File? _selectedImage; // null = no image (for mobile)
+  Uint8List? _selectedImageBytes; // null = no image (for web)
   final ImagePicker _imagePicker = ImagePicker();
 
   // Classification groups
@@ -74,11 +77,27 @@ class _ProductDeclarationScreenState extends State<ProductDeclarationScreen> {
       );
 
       if (pickedFile != null) {
-        setState(() {
-          _selectedImage = File(pickedFile.path);
-        });
+        if (kIsWeb) {
+          // For web: read bytes
+          final bytes = await pickedFile.readAsBytes();
+          if (mounted) {
+            setState(() {
+              _selectedImageBytes = bytes;
+              _selectedImage = null;
+            });
+          }
+        } else {
+          // For mobile: use File
+          if (mounted) {
+            setState(() {
+              _selectedImage = File(pickedFile.path);
+              _selectedImageBytes = null;
+            });
+          }
+        }
       }
     } catch (e) {
+      if (!mounted) return;
       showCupertinoDialog(
         context: context,
         builder: (_) => CupertinoAlertDialog(
@@ -98,8 +117,11 @@ class _ProductDeclarationScreenState extends State<ProductDeclarationScreen> {
   void _removeImage() {
     setState(() {
       _selectedImage = null;
+      _selectedImageBytes = null;
     });
   }
+
+  bool get _hasImage => kIsWeb ? _selectedImageBytes != null : _selectedImage != null;
 
   // Classification handlers
   void _addClassificationGroup() {
@@ -200,7 +222,8 @@ class _ProductDeclarationScreenState extends State<ProductDeclarationScreen> {
     }
 
     // Kiểm tra ảnh bắt buộc
-    if (_selectedImage == null) {
+    if (!_hasImage) {
+      if (!mounted) return;
       showCupertinoDialog(
         context: context,
         builder: (_) => const CupertinoAlertDialog(
@@ -231,12 +254,21 @@ class _ProductDeclarationScreenState extends State<ProductDeclarationScreen> {
     try {
       // Bước 1: Upload ảnh lên backend (backend sẽ upload lên Google Drive)
       String? imageUrl;
-      if (_selectedImage != null) {
+      if (_hasImage) {
         try {
           final uploadService = UploadService();
           
           // Upload ảnh lên backend
-          imageUrl = await uploadService.uploadImage(_selectedImage!);
+          if (kIsWeb && _selectedImageBytes != null) {
+            // For web: upload bytes directly
+            imageUrl = await uploadService.uploadImageBytes(
+              _selectedImageBytes!,
+              fileName: 'product_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            );
+          } else if (!kIsWeb && _selectedImage != null) {
+            // For mobile: upload File
+            imageUrl = await uploadService.uploadImage(_selectedImage!);
+          }
         } catch (e) {
           setState(() => _isSaving = false);
           if (!mounted) return;
@@ -244,7 +276,7 @@ class _ProductDeclarationScreenState extends State<ProductDeclarationScreen> {
             context: context,
             builder: (_) => CupertinoAlertDialog(
               title: const Text('Lỗi upload ảnh'),
-              content: Text('Không thể upload ảnh:\n$e'),
+              content: Text('Không thể upload ảnh:\n$e\n\nVui lòng kiểm tra:\n- Backend server đang chạy\n- URL backend đúng\n- Kết nối internet'),
               actions: [
                 CupertinoDialogAction(
                   child: const Text('Đóng'),
@@ -382,7 +414,7 @@ class _ProductDeclarationScreenState extends State<ProductDeclarationScreen> {
         ),
         const SizedBox(height: 8),
         GestureDetector(
-          onTap: _selectedImage == null ? _pickImage : null,
+          onTap: !_hasImage ? _pickImage : null,
           child: Container(
             height: 160,
             decoration: BoxDecoration(
@@ -391,7 +423,7 @@ class _ProductDeclarationScreenState extends State<ProductDeclarationScreen> {
               border: Border.all(color: Colors.black12),
               boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2))],
             ),
-            child: _selectedImage == null
+            child: !_hasImage
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -407,10 +439,17 @@ class _ProductDeclarationScreenState extends State<ProductDeclarationScreen> {
                       Positioned.fill(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            _selectedImage!,
-                            fit: BoxFit.cover,
-                          ),
+                          child: kIsWeb && _selectedImageBytes != null
+                              ? Image.memory(
+                                  _selectedImageBytes!,
+                                  fit: BoxFit.cover,
+                                )
+                              : !kIsWeb && _selectedImage != null
+                                  ? Image.file(
+                                      _selectedImage!,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : const SizedBox(),
                         ),
                       ),
                       Positioned(

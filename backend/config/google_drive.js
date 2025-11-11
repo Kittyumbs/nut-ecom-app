@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const { Readable } = require('stream');
 
 let driveClient = null;
 
@@ -66,6 +67,9 @@ const uploadFile = async (fileBuffer, fileName, mimeType) => {
   }
 
   try {
+    // Convert Buffer thành Stream (Google APIs yêu cầu Stream)
+    const stream = Readable.from(fileBuffer);
+    
     // Upload file
     const fileMetadata = {
       name: fileName,
@@ -74,7 +78,7 @@ const uploadFile = async (fileBuffer, fileName, mimeType) => {
 
     const media = {
       mimeType: mimeType,
-      body: fileBuffer,
+      body: stream,
     };
 
     const response = await drive.files.create({
