@@ -1,7 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nut_ecom_app/services/upload_service.dart';
+import 'package:intl/intl.dart';
 
 class TransactionsAddScreen extends StatefulWidget {
   const TransactionsAddScreen({super.key});
@@ -13,7 +19,8 @@ class TransactionsAddScreen extends StatefulWidget {
 class _TransactionsAddScreenState extends State<TransactionsAddScreen> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
-  final List<File> _selectedImages = [];
+  final List<XFile> _selectedImageFiles = []; // Lưu XFile cho cả web và mobile
+  final List<Uint8List> _selectedImageBytes = []; // Lưu bytes cho web preview
   final ImagePicker _imagePicker = ImagePicker();
   bool _isSaving = false;
 
@@ -31,7 +38,7 @@ class _TransactionsAddScreenState extends State<TransactionsAddScreen> {
   }
 
   Future<void> _pickImage() async {
-    if (_selectedImages.length >= 3) {
+    if (_selectedImageFiles.length >= 3) {
       showCupertinoDialog(
         context: context,
         builder: (_) => const CupertinoAlertDialog(
@@ -51,18 +58,44 @@ class _TransactionsAddScreenState extends State<TransactionsAddScreen> {
       );
 
       if (pickedFile != null) {
-        setState(() {
-          _selectedImages.add(File(pickedFile.path));
-        });
+        if (kIsWeb) {
+          // For web: read bytes for preview
+          final bytes = await pickedFile.readAsBytes();
+          setState(() {
+            _selectedImageFiles.add(pickedFile);
+            _selectedImageBytes.add(bytes);
+          });
+        } else {
+          // For mobile: just save XFile
+          setState(() {
+            _selectedImageFiles.add(pickedFile);
+          });
+        }
       }
     } catch (e) {
-      // Handle error
+      if (!mounted) return;
+      showCupertinoDialog(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text('Lỗi'),
+          content: Text('Không thể chọn ảnh: $e'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('Đóng'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
     }
   }
 
   void _removeImage(int index) {
     setState(() {
-      _selectedImages.removeAt(index);
+      _selectedImageFiles.removeAt(index);
+      if (kIsWeb && index < _selectedImageBytes.length) {
+        _selectedImageBytes.removeAt(index);
+      }
     });
   }
 
@@ -89,9 +122,131 @@ class _TransactionsAddScreenState extends State<TransactionsAddScreen> {
     }
 
     setState(() => _isSaving = true);
-    // --- TODO: Implement saving logic ---
-    await Future.delayed(const Duration(seconds: 1)); // Simulate network call
-    setState(() => _isSaving = false);
+
+    try {
+      // Parse số tiền
+      final amountText = _amountController.text.trim();
+      final isExpense = amountText.startsWith('-');
+      final amountValue = double.tryParse(
+        amountText.replaceAll(RegExp(r'[^\d.]'), ''),
+      );
+
+      if (amountValue == null) {
+        throw Exception('Số tiền không hợp lệ');
+      }
+
+      final amount = isExpense ? -amountValue : amountValue;
+
+      // Tạo date string theo format ddmmyy (VD: 161125)
+      final now = DateTime.now();
+      final dateStr = DateFormat('ddMMyy').format(now);
+
+      // Upload ảnh lên Google Drive
+      final List<String> imageUrls = [];
+      final uploadService = UploadService();
+
+      if (_selectedImageFiles.isNotEmpty) {
+        final List<String> failedImages = [];
+        
+        for (int i = 0; i < _selectedImageFiles.length; i++) {
+          try {
+            print('Đang upload ảnh ${i + 1}/${_selectedImageFiles.length}...');
+            String imageUrl;
+            
+            if (kIsWeb) {
+              // For web: upload bytes
+              final bytes = _selectedImageBytes[i];
+              imageUrl = await uploadService.uploadTransactionImageBytes(
+                bytes,
+                fileName: 'transaction_${dateStr}_${i + 1}.jpg',
+                dateStr: dateStr,
+                imageNumber: (i + 1).toString(),
+              );
+            } else {
+              // For mobile: upload File
+              // ignore: undefined_class
+              // File chỉ tồn tại trên mobile, không có trên web
+              final file = File(_selectedImageFiles[i].path);
+              imageUrl = await uploadService.uploadTransactionImage(
+                file,
+                dateStr: dateStr,
+                imageNumber: (i + 1).toString(),
+              );
+            }
+            
+            print('Upload ảnh ${i + 1} thành công: $imageUrl');
+            if (imageUrl.isNotEmpty) {
+              imageUrls.add(imageUrl);
+            } else {
+              failedImages.add('Ảnh ${i + 1}');
+              print('Warning: Upload ảnh ${i + 1} trả về URL rỗng');
+            }
+          } catch (e) {
+            print('Lỗi upload ảnh ${i + 1}: $e');
+            failedImages.add('Ảnh ${i + 1}');
+            // Log lỗi nhưng tiếp tục upload các ảnh khác
+          }
+        }
+        
+        print('Tổng số ảnh đã upload thành công: ${imageUrls.length}/${_selectedImageFiles.length}');
+        
+        // Hiển thị cảnh báo nếu có ảnh upload thất bại
+        if (failedImages.isNotEmpty && mounted) {
+          // Không block UI, chỉ log warning
+          print('Warning: ${failedImages.length} ảnh không upload được: ${failedImages.join(", ")}');
+        }
+      }
+
+      // Lưu transaction vào Firestore
+      final db = FirebaseFirestore.instance;
+      final transactions = db.collection('transactions');
+
+      await transactions.add({
+        'amount': amount,
+        'content': _contentController.text.trim(),
+        'imageUrls': imageUrls,
+        'createdAt': FieldValue.serverTimestamp(),
+        'date': DateFormat('dd/MM/yyyy').format(now),
+        'time': DateFormat('HH:mm:ss').format(now),
+        'timestamp': now.toIso8601String(),
+      });
+
+      if (!mounted) return;
+
+      // Hiển thị thông báo thành công và quay lại
+      showCupertinoDialog(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text('Thành công'),
+          content: const Text('Đã lưu giao dịch thành công.'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.pop(context); // Đóng dialog
+                Navigator.pop(context); // Quay lại màn hình trước
+              },
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      showCupertinoDialog(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text('Lỗi'),
+          content: Text('Không thể lưu giao dịch:\n$e'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('Đóng'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -108,11 +263,9 @@ class _TransactionsAddScreenState extends State<TransactionsAddScreen> {
           child: Container(height: 4, color: _primary),
         ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: _buildForm(context),
-          ),
+          _buildForm(context),
           _buildSaveButton(),
         ],
       ),
@@ -120,28 +273,30 @@ class _TransactionsAddScreenState extends State<TransactionsAddScreen> {
   }
 
   Widget _buildForm(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabeledField(
-            'Nhập số tiền',
-            _buildAmountField(),
-            requiredField: true,
-          ),
-          const SizedBox(height: 16),
-          _buildLabeledField(
-            'Nội dung',
-            _buildContentField(),
-            requiredField: true,
-          ),
-          const SizedBox(height: 16),
-          _buildLabeledField(
-            'Upload hình ảnh (tùy chọn)',
-            _buildImageSection(),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLabeledField(
+              'Nhập số tiền',
+              _buildAmountField(),
+              requiredField: true,
+            ),
+            const SizedBox(height: 16),
+            _buildLabeledField(
+              'Nội dung',
+              _buildContentField(),
+              requiredField: true,
+            ),
+            const SizedBox(height: 16),
+            _buildLabeledField(
+              'Upload hình ảnh (tùy chọn)',
+              _buildImageSection(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -177,10 +332,14 @@ class _TransactionsAddScreenState extends State<TransactionsAddScreen> {
     return CupertinoTextField(
       controller: _amountController,
       placeholder: 'Nhập thêm dấu - nếu là khoản CHI',
-      keyboardType: const TextInputType.numberWithOptions(signed: true),
+      keyboardType: TextInputType.text, // Dùng text để có đầy đủ ký tự bao gồm dấu -
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       decoration: BoxDecoration(
           color: Colors.white, borderRadius: BorderRadius.circular(10)),
+      inputFormatters: [
+        // Cho phép số, dấu chấm, dấu phẩy và dấu trừ ở đầu
+        FilteringTextInputFormatter.allow(RegExp(r'^-?[\d.,]*')),
+      ],
     );
   }
 
@@ -202,19 +361,17 @@ class _TransactionsAddScreenState extends State<TransactionsAddScreen> {
           spacing: 10,
           runSpacing: 10,
           children: [
-            ..._selectedImages.asMap().entries.map((entry) {
-              int index = entry.key;
-              File image = entry.value;
-              return _buildImageThumbnail(image, index);
+            ...List.generate(_selectedImageFiles.length, (index) {
+              return _buildImageThumbnail(index);
             }),
-            if (_selectedImages.length < 3) _buildAddImageButton(),
+            if (_selectedImageFiles.length < 3) _buildAddImageButton(),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildImageThumbnail(File image, int index) {
+  Widget _buildImageThumbnail(int index) {
     return SizedBox(
       width: 100,
       height: 100,
@@ -223,7 +380,36 @@ class _TransactionsAddScreenState extends State<TransactionsAddScreen> {
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.file(image, fit: BoxFit.cover),
+              child: kIsWeb && index < _selectedImageBytes.length
+                  ? Image.memory(
+                      _selectedImageBytes[index],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.error, color: Colors.red),
+                        );
+                      },
+                    )
+                  : !kIsWeb && index < _selectedImageFiles.length
+                      ? Builder(
+                          builder: (context) {
+                            // ignore: undefined_class
+                            // File chỉ tồn tại trên mobile, không có trên web
+                            final file = File(_selectedImageFiles[index].path);
+                            return Image.file(
+                              file,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.error, color: Colors.red),
+                                );
+                              },
+                            );
+                          },
+                        )
+                      : const SizedBox(),
             ),
           ),
           Positioned(
@@ -272,8 +458,10 @@ class _TransactionsAddScreenState extends State<TransactionsAddScreen> {
   }
 
   Widget _buildSaveButton() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+    return Positioned(
+      left: 16,
+      right: 16,
+      bottom: 18,
       child: CupertinoButton(
         color: _save,
         padding: const EdgeInsets.symmetric(vertical: 16),

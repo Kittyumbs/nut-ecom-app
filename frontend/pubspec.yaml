@@ -72,6 +72,6 @@ flutter:
   assets:
     - assets/images/
     - assets/images/icons/
-    - assets/images/logo.svg
+    - assets/images/logo.png
     - assets/animations/
     - assets/animations/Scan_qr_code.json

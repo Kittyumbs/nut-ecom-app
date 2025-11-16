@@ -53,13 +53,80 @@ const getDriveClient = () => {
 };
 
 /**
+ * Tìm hoặc tạo folder trên Google Drive
+ * @param {String} folderName - Tên folder
+ * @param {String} parentFolderId - ID của folder cha (tùy chọn)
+ * @returns {Promise<String>} - ID của folder
+ */
+const findOrCreateFolder = async (folderName, parentFolderId = null) => {
+  const drive = getDriveClient();
+  
+  if (!drive) {
+    throw new Error('Google Drive client chưa được khởi tạo. Vui lòng cấu hình credentials.');
+  }
+
+  try {
+    // Tìm folder đã tồn tại
+    let query = `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`;
+    if (parentFolderId) {
+      query += ` and '${parentFolderId}' in parents`;
+    }
+    
+    const response = await drive.files.list({
+      q: query,
+      fields: 'files(id, name)',
+    });
+
+    if (response.data.files && response.data.files.length > 0) {
+      // Folder đã tồn tại, trả về ID
+      return response.data.files[0].id;
+    }
+
+    // Folder chưa tồn tại, tạo mới
+    const folderMetadata = {
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder',
+    };
+
+    // Nếu có parentFolderId, thêm vào parents
+    if (parentFolderId) {
+      folderMetadata.parents = [parentFolderId];
+    }
+
+    const folder = await drive.files.create({
+      requestBody: folderMetadata,
+      fields: 'id',
+    });
+
+    if (!folder.data.id) {
+      throw new Error('Không tạo được folder trên Drive');
+    }
+
+    // Set quyền public cho folder
+    await drive.permissions.create({
+      fileId: folder.data.id,
+      requestBody: {
+        role: 'reader',
+        type: 'anyone',
+      },
+    });
+
+    return folder.data.id;
+  } catch (error) {
+    console.error('Error finding/creating folder:', error);
+    throw new Error(`Lỗi tìm/tạo folder: ${error.message}`);
+  }
+};
+
+/**
  * Upload file lên Google Drive và set quyền public
  * @param {Buffer} fileBuffer - Buffer của file
  * @param {String} fileName - Tên file
  * @param {String} mimeType - MIME type (VD: 'image/jpeg')
+ * @param {String} folderId - ID của folder (tùy chọn)
  * @returns {Promise<String>} - URL công khai của file
  */
-const uploadFile = async (fileBuffer, fileName, mimeType) => {
+const uploadFile = async (fileBuffer, fileName, mimeType, folderId = null) => {
   const drive = getDriveClient();
   
   if (!drive) {
@@ -75,6 +142,11 @@ const uploadFile = async (fileBuffer, fileName, mimeType) => {
       name: fileName,
       mimeType: mimeType,
     };
+
+    // Nếu có folderId, thêm vào parents
+    if (folderId) {
+      fileMetadata.parents = [folderId];
+    }
 
     const media = {
       mimeType: mimeType,
@@ -115,5 +187,6 @@ module.exports = {
   initializeDrive,
   getDriveClient,
   uploadFile,
+  findOrCreateFolder,
 };
 

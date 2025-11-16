@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/app_header.dart';
 
 class WarehouseScreen extends StatelessWidget {
@@ -34,11 +33,11 @@ class WarehouseScreen extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              // Icon stock.svg with text
+              // Icon stock.png with text
               _buildMenuIcon(
                 context: context,
                 scale: scale,
-                iconPath: 'assets/images/stock.svg',
+                iconPath: 'assets/images/stock.png',
                 label: 'Tồn kho',
                 top: baseTop * scale,
                 left: baseLeft1 * scale,
@@ -46,11 +45,11 @@ class WarehouseScreen extends StatelessWidget {
                   // TODO: Navigate to stock screen
                 },
               ),
-              // Icon return.svg with text
+              // Icon return.png with text
               _buildMenuIcon(
                 context: context,
                 scale: scale,
-                iconPath: 'assets/images/return.svg',
+                iconPath: 'assets/images/return.png',
                 label: 'Nhập trả',
                 top: baseTop * scale,
                 left: baseLeft2 * scale,
@@ -58,11 +57,11 @@ class WarehouseScreen extends StatelessWidget {
                   // TODO: Navigate to return screen
                 },
               ),
-              // Icon destroy.svg with text
+              // Icon destroy.png with text
               _buildMenuIcon(
                 context: context,
                 scale: scale,
-                iconPath: 'assets/images/destroy.svg',
+                iconPath: 'assets/images/destroy.png',
                 label: 'Tiêu hủy',
                 top: baseTop * scale,
                 left: baseLeft3 * scale,
@@ -123,7 +122,7 @@ class WarehouseScreen extends StatelessWidget {
             SizedBox(
               width: baseIconSize * scale,
               height: baseIconSize * scale,
-              child: SvgPicture.asset(
+              child: Image.asset(
                 iconPath,
                 fit: BoxFit.contain,
               ),

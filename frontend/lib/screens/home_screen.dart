@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/app_header.dart';
 import 'handover_screen.dart';
 import 'packaging_screen.dart';
@@ -40,7 +39,7 @@ class HomeScreen extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              // Icon orders.svg với text
+              // Icon orders.png với text
               Positioned(
                 top: baseOrdersTop * scale,
                 left: baseOrdersLeft * scale,
@@ -62,8 +61,8 @@ class HomeScreen extends StatelessWidget {
                       SizedBox(
                         width: baseIconSize * scale,
                         height: baseIconSize * scale,
-                        child: SvgPicture.asset(
-                          'assets/images/orders.svg',
+                        child: Image.asset(
+                          'assets/images/orders.png',
                           fit: BoxFit.contain,
                         ),
                       ),
@@ -82,7 +81,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              // Icon ordershot.svg với text
+              // Icon ordershot.png với text
               Positioned(
                 top: baseOrdersHotTop * scale,
                 left: baseOrdersHotLeft * scale,
@@ -104,8 +103,8 @@ class HomeScreen extends StatelessWidget {
                       SizedBox(
                         width: baseIconSize * scale,
                         height: baseIconSize * scale,
-                        child: SvgPicture.asset(
-                          'assets/images/ordershot.svg',
+                        child: Image.asset(
+                          'assets/images/ordershot.png',
                           fit: BoxFit.contain,
                         ),
                       ),
@@ -124,7 +123,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              // Icon handover.svg với text
+              // Icon handover.png với text
               Positioned(
                 top: baseHandoverTop * scale,
                 left: baseHandoverLeft * scale,
@@ -144,8 +143,8 @@ class HomeScreen extends StatelessWidget {
                       SizedBox(
                         width: baseIconSize * scale,
                         height: baseIconSize * scale,
-                        child: SvgPicture.asset(
-                          'assets/images/handover.svg',
+                        child: Image.asset(
+                          'assets/images/handover.png',
                           fit: BoxFit.contain,
                         ),
                       ),

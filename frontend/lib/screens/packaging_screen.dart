@@ -209,25 +209,31 @@ class _PackagingScreenState extends State<PackagingScreen> {
     const baseGridIconSize = 18.0;
     const baseGridIconRight = 10.0;
 
+    // Lấy padding bottom cho home indicator
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 0, // Giữ nguyên index của HomeScreen
-        onTap: (index) {
-          if (index == 0) {
-            // Nếu click vào tab Home, pop về HomeScreen
-            Navigator.pop(context);
-          } else {
-            // Nếu click vào tab khác, navigate đến MainScreen với tab đó
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MainScreen(initialIndex: index),
-              ),
-              (route) => false, // Xóa tất cả routes trước đó
-            );
-          }
-        },
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.only(bottom: bottomPadding),
+        child: CustomBottomNavBar(
+          currentIndex: 0, // Giữ nguyên index của HomeScreen
+          onTap: (index) {
+            if (index == 0) {
+              // Nếu click vào tab Home, pop về HomeScreen
+              Navigator.pop(context);
+            } else {
+              // Nếu click vào tab khác, navigate đến MainScreen với tab đó
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MainScreen(initialIndex: index),
+                ),
+                (route) => false, // Xóa tất cả routes trước đó
+              );
+            }
+          },
+        ),
       ),
       body: Stack(
         clipBehavior: Clip.none,

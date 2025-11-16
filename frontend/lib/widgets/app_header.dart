@@ -23,15 +23,22 @@ class AppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final scale = _getScaleFactor(context);
+    // Lấy top padding để tính toán vị trí chính xác
+    // MainScreen đã thêm padding top cho body, nhưng AppHeader được đặt ở top: 0 trong HomeScreen
+    // nên cần tính toán để bù lại padding top đó
+    final topPadding = MediaQuery.of(context).padding.top;
 
     // Base dimensions từ design 390x844
     const baseHeaderWidth = 390.0;
     const baseHeaderHeight = 100.0;
     const baseGreetingLeft = 20.0;
-    const baseGreetingTop = 42.0;
+    // Điều chỉnh top để tính cả topPadding (status bar/notch)
+    // Vì MainScreen đã thêm padding top, nên AppHeader cần offset thêm topPadding
+    final baseGreetingTop = 42.0 + topPadding;
     const baseGreetingFontSize = 14.0; // Font size của "Chào, Anh Duy"
     const baseVersionLeft = 343.0; // Padding từ bên trái theo design
-    const baseVersionTop = 46.0;
+    // Điều chỉnh top để tính cả topPadding (status bar/notch)
+    final baseVersionTop = 46.0 + topPadding;
     const baseNotificationBoxWidth = 350.0;
     const baseNotificationBoxHeight = 30.0;
     const baseNotificationBoxLeft = 20.0;
@@ -42,8 +49,9 @@ class AppHeader extends StatelessWidget {
     // Để đè lên header (100px): đặt top: 66px
     // - 34px trong header (66-100px)
     // - Overflow ra ngoài (100-130px) nhưng vẫn đè lên
-    const baseNotificationBoxTop =
-        66.0; // 66px từ top AppHeader (dưới text, đè lên header)
+    // Điều chỉnh top để tính cả topPadding (status bar/notch)
+    final baseNotificationBoxTop =
+        66.0 + topPadding; // 66px từ top AppHeader (dưới text, đè lên header)
     const baseIconSize = 22.0;
     const baseIconLeft = 3.0;
     const baseIconTop = 4.0;

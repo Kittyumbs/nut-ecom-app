@@ -174,23 +174,29 @@ class _HandoverScreenState extends State<HandoverScreen> {
 
     const baseListTop = baseSearchBoxTop + baseSearchBoxHeight + 10.0;
 
+    // Lấy padding bottom cho home indicator
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 0,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pop(context);
-          } else {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MainScreen(initialIndex: index),
-              ),
-              (route) => false,
-            );
-          }
-        },
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.only(bottom: bottomPadding),
+        child: CustomBottomNavBar(
+          currentIndex: 0,
+          onTap: (index) {
+            if (index == 0) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MainScreen(initialIndex: index),
+                ),
+                (route) => false,
+              );
+            }
+          },
+        ),
       ),
       body: Stack(
         clipBehavior: Clip.none,

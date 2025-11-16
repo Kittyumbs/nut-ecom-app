@@ -32,6 +32,12 @@ app.get('/health', (req, res) => {
 app.use('/api/orders', orderRoutes);
 app.use('/api/upload', uploadRoutes);
 
+// Debug: Log all routes
+console.log('Registered routes:');
+console.log('  - /api/orders');
+console.log('  - /api/upload/image');
+console.log('  - /api/upload/transaction-image');
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
